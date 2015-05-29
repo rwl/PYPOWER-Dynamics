@@ -36,7 +36,26 @@ class sym_order6b:
         self.opt = dynopt['iopt']
         self.omega_n = 2 * np.pi * dynopt['fn']
         
+        # Check for speed-voltage term option 
+        if 'speed_volt' in dynopt:
+            self.speed_volt = dynopt['speed_volt']
+        else:
+            self.speed_volt = False
+        
         self.parser(filename)
+        
+        # Convert impedances and H to 100MVA base
+        if 'MVA_Rating' in self.params.keys():
+            base_mva = self.params['MVA_Rating']
+            self.params['H'] = self.params['H'] * base_mva / 100
+            self.params['Ra'] = self.params['Ra'] * 100 / base_mva
+            self.params['Xa'] = self.params['Xa'] * 100 / base_mva
+            self.params['Xd'] = self.params['Xd'] * 100 / base_mva
+            self.params['Xdp'] = self.params['Xdp'] * 100 / base_mva
+            self.params['Xdpp'] = self.params['Xdpp'] * 100 / base_mva
+            self.params['Xq'] = self.params['Xq'] * 100 / base_mva
+            self.params['Xqp'] = self.params['Xqp'] * 100 / base_mva
+            self.params['Xqpp'] = self.params['Xqpp'] * 100 / base_mva
         
         # Internal variables
         self.params['gamma_d1'] = (self.params['Xdpp'] - self.params['Xa']) / (self.params['Xdp'] - self.params['Xa'])
@@ -184,7 +203,6 @@ class sym_order6b:
         Edp = self.states['Edp']
         phid_pp = self.states['phid_pp']
         phiq_pp = self.states['phiq_pp']
-        omega = self.states['omega']
         
         Ra = self.params['Ra']
         Xa = self.params['Xa']
@@ -194,6 +212,12 @@ class sym_order6b:
         Xqpp = self.params['Xqpp']     
         gamma_d1 = self.params['gamma_d1']
         gamma_q1 = self.params['gamma_q1']
+        
+        # Check if speed-voltage term should be included
+        if self.speed_volt:
+            omega = self.states['omega']
+        else:
+            omega = 1
         
         Id = (-Vq / omega + gamma_d1 * Eqp + (1 - gamma_d1) * phid_pp - Ra / (omega * Xqpp) * (Vd - gamma_q1 * Edp + (1 - gamma_q1) * phiq_pp)) / (Xdpp + Ra ** 2 / (omega * omega * Xqpp))
         Iq = (Vd / omega + (Ra * Id / omega) - gamma_q1 * Edp + (1 - gamma_q1) * phiq_pp) / Xqpp
@@ -222,7 +246,7 @@ class sym_order6b:
         
     def solve_step(self,h,dstep):
         """
-        Solve machine differential equations for the next step in modified Euler method iteration
+        Solve machine differential equations for the next stage in the integration step
         """
         
         # Initial state variables
@@ -291,7 +315,7 @@ class sym_order6b:
                 self.dsteps['omega'] = [k_omega]
                 self.states['delta'] = delta_0 + k_delta
                 self.dsteps['delta'] = [k_delta]
-            else:
+            elif dstep == 1:
                 # Corrector step
                 self.states['Eqp'] = Eqp_0 + 0.5 * (k_Eqp - self.dsteps['Eqp'][0])
                 self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])

@@ -36,7 +36,25 @@ class sym_order6a:
         self.opt = dynopt['iopt']
         self.omega_n = 2 * np.pi * dynopt['fn']
         
+        # Check for speed-voltage term option 
+        if 'speed_volt' in dynopt:
+            self.speed_volt = dynopt['speed_volt']
+        else:
+            self.speed_volt = False
+        
         self.parser(filename)
+        
+        # Convert impedances and H to 100MVA base
+        if 'MVA_Rating' in self.params.keys():
+            base_mva = self.params['MVA_Rating']
+            self.params['H'] = self.params['H'] * base_mva / 100
+            self.params['Ra'] = self.params['Ra'] * 100 / base_mva
+            self.params['Xd'] = self.params['Xd'] * 100 / base_mva
+            self.params['Xdp'] = self.params['Xdp'] * 100 / base_mva
+            self.params['Xdpp'] = self.params['Xdpp'] * 100 / base_mva
+            self.params['Xq'] = self.params['Xq'] * 100 / base_mva
+            self.params['Xqp'] = self.params['Xqp'] * 100 / base_mva
+            self.params['Xqpp'] = self.params['Xqpp'] * 100 / base_mva
         
         # Equivalent Norton impedance for Ybus modification
         self.Yg = (self.params['Ra'] - 1j * 0.5 * (self.params['Xdpp'] + self.params['Xqpp'])) / (self.params['Ra'] **2 + (self.params['Xdpp'] * self.params['Xqpp']))
@@ -122,10 +140,15 @@ class sym_order6a:
         # Calculate Id and Iq (Norton equivalent current injection in dq frame)
         Eqpp = self.states['Eqpp']
         Edpp = self.states['Edpp']
-        omega = self.states['omega']
         Ra = self.params['Ra']
         Xdpp = self.params['Xdpp']
         Xqpp = self.params['Xqpp']
+        
+        # Check if speed-voltage term should be included
+        if self.speed_volt:
+            omega = self.states['omega']
+        else:
+            omega = 1
         
         Id = (Eqpp - Ra / (Xqpp * omega) * (Vd - Edpp) - Vq / omega) / (Xdpp + Ra ** 2 / (omega * omega * Xqpp))
         Iq = (Vd / omega + Ra * Id / omega - Edpp) / Xqpp
@@ -154,7 +177,7 @@ class sym_order6a:
         
     def solve_step(self,h,dstep):
         """
-        Solve machine differential equations for the next step in modified Euler method iteration
+        Solve machine differential equations for the next stage in the integration step
         """
         
         # Initial state variables
@@ -217,7 +240,7 @@ class sym_order6a:
                 self.dsteps['omega'] = [k_omega]
                 self.states['delta'] = delta_0 + k_delta
                 self.dsteps['delta'] = [k_delta]
-            else:
+            elif dstep == 1:
                 # Corrector step
                 self.states['Eqp'] = Eqp_0 + 0.5 * (k_Eqp - self.dsteps['Eqp'][0])
                 self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])

@@ -23,6 +23,7 @@ Time-domain simulation engine
 
 from pydyn.interface import init_interfaces
 from pydyn.mod_Ybus import mod_Ybus
+from pydyn.version import pydyn_ver
 
 from scipy.sparse.linalg import splu
 import numpy as np
@@ -51,6 +52,10 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     # SETUP #
     #########
     
+    # Get version information
+    ver = pydyn_ver()
+    print('PYPOWER-Dynamics ' + ver['Version'] + ', ' + ver['Date'])
+    
     # Program options
     if dynopt:
         h = dynopt['h']             
@@ -70,7 +75,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid']:
+        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid', 'pydyn.vsc_average', 'pydyn.asym_1cage']:
             sources.append(element)
             
         if element.__module__ == 'pydyn.controller':
@@ -82,7 +87,6 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     ##################
     # INITIALISATION #
     ##################
-    
     print('Initialising models...')
     
     # Run power flow and update bus voltages and angles in PYPOWER case object
@@ -103,10 +107,17 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     
     # Initialise sources from load flow
     for source in sources:
-        source_bus = ppc_int['gen'][source.gen_no,0]
-        S_source = np.complex(results["gen"][source.gen_no, 1] / baseMVA, results["gen"][source.gen_no, 2] / baseMVA)
-        v_source = v0[source_bus]
-        source.initialise(v_source,S_source)
+        if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
+            # Asynchronous machine
+            source_bus = ppc_int['bus'][source.bus_no,0]
+            v_source = v0[source_bus]
+            source.initialise(v_source,0)
+        else:
+            # Generator or VSC
+            source_bus = ppc_int['gen'][source.gen_no,0]
+            S_source = np.complex(results["gen"][source.gen_no, 1] / baseMVA, results["gen"][source.gen_no, 2] / baseMVA)
+            v_source = v0[source_bus]
+            source.initialise(v_source,S_source)
     
     # Interface controllers and machines (for initialisation)
     for intf in interfaces:
@@ -190,8 +201,15 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         # Update current injections for sources
         I = np.zeros(no_buses, dtype='complex')
         for source in sources:
-            source_bus = ppc_int['gen'][source.gen_no,0]
+            if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
+                # Asynchronous machine
+                source_bus = ppc_int['bus'][source.bus_no,0]
+            else:
+                # Generators or VSC
+                source_bus = ppc_int['gen'][source.gen_no,0]
+                
             I[source_bus] = source.calc_currents(v_prev[source_bus])
+            
         
         # Solve for network voltages
         vtmp = Ybus_inv.solve(I) 
