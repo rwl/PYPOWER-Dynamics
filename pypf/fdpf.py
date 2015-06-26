@@ -10,7 +10,6 @@ import sys
 from numpy import array, angle, exp, linalg, conj, r_, Inf
 from scipy.sparse.linalg import splu
 
-# from pfoptions import init_pf_options
 from pypower.ppoption import ppoption
 
 def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
@@ -35,13 +34,12 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     if ppopt is None:
-        ppopt = ppoption()#PFOptions()
-#         init_pf_options(ppopt)
+        ppopt = ppoption()
 
     ## options
-    tol     = ppopt.tolerance
-    max_it  = ppopt.iterMaxFD
-    verbose = ppopt.verbose
+    tol     = ppopt['PF_TOL']
+    max_it  = ppopt['PF_MAX_IT_FD']
+    verbose = ppopt['VERBOSE']
 
     ## initialize
     converged = 0

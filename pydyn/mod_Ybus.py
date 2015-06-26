@@ -11,9 +11,6 @@ Build modified Ybus matrix
 """
 
 import numpy as np
-from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
-    VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
-
 
 def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
     # Add equivalent generator and grid admittances to Ybus matrix
@@ -34,10 +31,10 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
             Ybus[i,i] = Ybus[i,i] + Ye
 
     # Add equivalent load admittance to Ybus matrix    
-    Pl, Ql = bus[:, PD], bus[:, QD]
+    Pl, Ql = bus.Pd, bus.Qd
     for i in range(len(Pl)):
         S_load = (Pl[i] - 1j * Ql[i]) / baseMVA
-        y_load = S_load / (bus[i, VM] ** 2)
+        y_load = S_load / (bus.Vm[i] ** 2)
         Ybus[i,i] = Ybus[i,i] + y_load
     
     return Ybus

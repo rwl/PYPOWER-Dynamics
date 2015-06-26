@@ -6,9 +6,8 @@ from pypf.casedata import convert_ppc
 def main():
     ppc = case9()
     pfc = convert_ppc(ppc)
-    ppopt = ppoption()
+    ppopt = ppoption(PF_DC=False, PF_ALG=3)
     runpf(pfc, ppopt)
 
 if __name__ == '__main__':
     main()
-    

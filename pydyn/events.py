@@ -11,8 +11,6 @@ Sets up and handles events in the simulation
 """
 
 import numpy as np
-from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
-    VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
 
 class events:
     def __init__(self, filename):
@@ -76,20 +74,20 @@ class events:
                     Xf = float(self.event_stack[0][4])
                     
                     if Rf == 0:
-                        ppc["bus"][bus_id, GS] = 1e6
+                        ppc.bus.Gs[bus_id] = 1e6
                     elif Rf < 0:
-                        ppc["bus"][bus_id, GS] = 0
+                        ppc.bus.Gs[bus_id] = 0
                         Rf = 'Inf'
                     else:
-                        ppc["bus"][bus_id, GS] = 1 / Rf * baseMVA
+                        ppc.bus.Gs[bus_id] = 1 / Rf * baseMVA
                     
                     if Xf == 0:
-                        ppc["bus"][bus_id, BS] = -1e6
+                        ppc.bus.Bs[bus_id] = -1e6
                     elif Xf < 0:
-                        ppc["bus"][bus_id, BS] = 0
+                        ppc.bus.Bs[bus_id] = 0
                         Xf = 'Inf'
                     else:
-                        ppc["bus"][bus_id, BS] = -1 / Xf * baseMVA
+                        ppc.bus.Bs[bus_id] = -1 / Xf * baseMVA
                     
                     refactorise = True
                     
@@ -97,15 +95,15 @@ class events:
                 
                 if event_type == 'CLEAR_FAULT':
                     bus_id = int(self.event_stack[0][2])
-                    ppc["bus"][bus_id, BS] = 0
-                    ppc["bus"][bus_id, GS] = 0
+                    ppc.bus.Bs[bus_id] = 0
+                    ppc.bus.Gs[bus_id] = 0
                     refactorise = True
                     
                     print('CLEAR_FAULT event at t=' + str(t) + 's on bus at row "' + str(bus_id) + '".')
                 
                 if event_type == 'TRIP_BRANCH':
                     branch_id = int(self.event_stack[0][2])
-                    ppc["branch"] = np.delete(ppc["branch"],branch_id, 0)
+                    ppc.branch.delete(branch_id)
                     refactorise = True
                     
                     print('TRIP_BRANCH event at t=' + str(t) + 's on branch "' + str(branch_id) + '".')
@@ -115,8 +113,8 @@ class events:
                     Pl = float(self.event_stack[0][3])
                     Ql = float(self.event_stack[0][4])
                     
-                    ppc["bus"][bus_id, PD] = Pl
-                    ppc["bus"][bus_id, QD] = Ql
+                    ppc.bus.Pd[bus_id] = Pl
+                    ppc.bus.Qd[bus_id] = Ql
                     
                     refactorise = True
                     

@@ -22,6 +22,7 @@ from pydyn.run_sim import run_sim
 
 # External modules
 from pypower.loadcase import loadcase
+from pypf.casedata import convert_ppc
 import matplotlib.pyplot as plt
 import numpy as np
     
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     print('----------------------------')
 
     # Load PYPOWER case
-    ppc = loadcase('smib_case.py')
+    ppc = convert_ppc(loadcase('smib_case.py'))
     
     # Program options
     dynopt = {}

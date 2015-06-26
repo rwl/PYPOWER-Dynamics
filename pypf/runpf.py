@@ -21,6 +21,7 @@ from pypower.ppver import ppver
 from pypower.dcpf import dcpf
 from pypower.savecase import savecase
 from pypower.int2ext import int2ext
+from pypower.idx_bus import REF, PQ
 
 from pypf.bustypes import bustypes
 from pypf.makeBdc import makeBdc
@@ -80,7 +81,7 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
 
     ## read data
 #     ppc = loadcase(casedata)
-    ppc = casedata
+    ppc = casedata.copy()
 
     ## add zero columns to branch for flows if needed
     nl = ppc.branch.n
@@ -131,8 +132,8 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
         branch.Qf = zeros(branch.n)
         branch.Qt = zeros(branch.n)
         branch.Pf = (Bf * Va + Pfinj) * baseMVA
-        branch.Pt = -array(branch.pf)
-        bus.Vm = ones(bus.shape[0])
+        branch.Pt = -array(branch.Pf)
+        bus.Vm = ones(bus.n)
         bus.Va = Va * (180 / pi)
         ## update Pg for slack generator (1st gen at ref bus)
         ## (note: other gens at ref bus are accounted for in Pbus)
@@ -246,7 +247,8 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
                     for i in range(len(mx)):            ## [one at a time, since they may be at same bus]
                         gen.status[mx[i]] = 0        ## temporarily turn off gen,
                         bi = gen.bus[mx[i]]   ## adjust load accordingly,
-                        bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
+                        bus.Pd[bi] = bus.Pd[bi] - gen.Pg[mx[i]]
+                        bus.Qd[bi] = bus.Qd[bi] - gen.Qg[mx[i]]
                     
                     if len(ref) > 1 and any(bus.type[gen.bus[mx]] == REF):
                         raise ValueError('Sorry, PYPOWER cannot enforce Q '
@@ -272,7 +274,8 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
             gen.Qg[limited] = fixedQg[limited]    ## restore Qg value,
             for i in range(len(limited)):               ## [one at a time, since they may be at same bus]
                 bi = gen.bus[limited[i]]           ## re-adjust load,
-                bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
+                bus.Pd[bi] = bus.Pd[bi] - gen.Pg[limited[i]]
+                bus.Qd[bi] = bus.Qd[bi] - gen.Qg[limited[i]]
                 gen.status[limited[i]] = 1           ## and turn gen back on
             
             if ref != ref0:

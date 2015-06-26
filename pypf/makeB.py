@@ -5,7 +5,7 @@
 """Builds the FDPF matrices, B prime and B double prime.
 """
 
-from numpy import ones, zeros, copy
+from numpy import ones, zeros
 
 from pypf.makeYbus import makeYbus
 
@@ -26,8 +26,8 @@ def makeB(baseMVA, bus, branch, alg):
     nl = branch.n       ## number of lines
 
     ##-----  form Bp (B prime)  -----
-    temp_branch = copy(branch)                 ## modify a copy of branch
-    temp_bus = copy(bus)                       ## modify a copy of bus
+    temp_branch = branch.copy()                 ## modify a copy of branch
+    temp_bus = bus.copy()                       ## modify a copy of bus
     temp_bus.bs = zeros(nb)                ## zero out shunts at buses
     temp_branch.b = zeros(nl)           ## zero out line charging shunts
     temp_branch.tap = ones(nl)             ## cancel out taps
@@ -36,7 +36,7 @@ def makeB(baseMVA, bus, branch, alg):
     Bp = -1 * makeYbus(baseMVA, temp_bus, temp_branch)[0].imag
 
     ##-----  form Bpp (B double prime)  -----
-    temp_branch = copy(branch)                 ## modify a copy of branch
+    temp_branch = branch.copy()                 ## modify a copy of branch
     temp_branch.shift = zeros(nl)          ## zero out phase shifters
     if alg == 3:                               ## if BX method
         temp_branch.r = zeros(nl)    ## zero out line resistance
