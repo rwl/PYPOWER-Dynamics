@@ -122,6 +122,7 @@ class controller:
                 yo = float(line[2])
             
             elif block == 'GAIN':
+                yi = self.signals[line[2]]
                 p = float(line[3])
                 yo = blocks.gain_block(yi,p)
             
@@ -193,7 +194,7 @@ class controller:
         """
         yi = []        
         for x in tokens:
-            if x.replace('.','0').isnumeric() == True:
+            if unicode(x.replace('.','0')).isnumeric() == True:
                 yi.append(float(x))
             elif x[0] == '-':
                 yi.append(-self.signals[x[1:]])
