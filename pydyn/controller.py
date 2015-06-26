@@ -193,7 +193,7 @@ class controller:
         """
         yi = []        
         for x in tokens:
-            if x.replace('.','0').isnumeric() == True:
+            if unicode(x.replace('.','0')).isnumeric() == True:
                 yi.append(float(x))
             elif x[0] == '-':
                 yi.append(-self.signals[x[1:]])
