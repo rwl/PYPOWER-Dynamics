@@ -89,13 +89,14 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     Ybus = mod_Ybus(Ybus, elements, bus, ppc_int.gen, baseMVA)
     
     # Calculate initial voltage phasors
-    v0 = bus.vm * (np.cos(np.radians(bus.Va)) + 1j * np.sin(np.radians(bus.Va)))
+    v0 = bus.Vm * (np.cos(np.radians(bus.Va)) + 1j * np.sin(np.radians(bus.Va)))
+#     v0  = bus.Vm * np.exp(1j * np.pi/180 * bus.Va)
     
     # Initialise sources from load flow
     for source in sources:
         if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
             # Asynchronous machine
-            source_bus = ppc_int['bus'][source.bus_no,0]
+            source_bus = source.bus_no#ppc_int['bus'][source.bus_no,0]
             v_source = v0[source_bus]
             source.initialise(v_source,0)
         else:
@@ -149,7 +150,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
                 element.solve_step(h,j) 
             
             # Interface with network equations
-            v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
+            v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, bus.n, max_err, max_iter)
         
         if recorder != None:
             # Record signals or states
@@ -172,7 +173,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
                 Ybus_inv = splu(Ybus)
                 
                 # Solve network equations
-                v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
+                v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, bus.n, max_err, max_iter)
                 
     return recorder
     

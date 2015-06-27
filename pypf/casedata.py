@@ -131,10 +131,11 @@ class Branch(object):
         self.tap = delete(self.tap, i)
         self.shift = delete(self.shift, i)
         self.status = delete(self.status, i)
-        self.Pf = delete(self.Pf, i)
-        self.Qf = delete(self.Qf, i)
-        self.Pt = delete(self.Pt, i)
-        self.Qt = delete(self.Qt, i)
+        if (len(self.Pf) != 0):
+            self.Pf = delete(self.Pf, i)
+            self.Qf = delete(self.Qf, i)
+            self.Pt = delete(self.Pt, i)
+            self.Qt = delete(self.Qt, i)
 
 # class PFOptions(object):
 #     def __init__(self):
