@@ -44,6 +44,8 @@ class Bus(object):
 
         self.area = zeros(n)
 
+        self.faultMVA = zeros(n)
+
     def copy(self):
         bus = Bus()
         bus.n = self.n
@@ -57,6 +59,8 @@ class Bus(object):
         bus.baseKV = copy(self.baseKV)
 
         bus.area = copy(self.area)
+
+        bus.faultMVA = copy(self.faultMVA)
         return bus
 
 class Gen(object):
@@ -73,6 +77,9 @@ class Gen(object):
         self.Pmin = zeros(n)
         self.Pmax = zeros(n)
 
+        self.Rgen = zeros(n)
+        self.Xdpp = zeros(n)
+
     def copy(self):
         gen = Gen()
         gen.n = self.n;
@@ -86,6 +93,9 @@ class Gen(object):
 
         gen.Pmin = copy(self.Pmin)
         gen.Pmax = copy(self.Pmax)
+
+        gen.Rgen = copy(self.Rgen)
+        gen.Xdpp = copy(self.Xdpp)
         return gen
 
 class Branch(object):
@@ -178,8 +188,7 @@ def convert_ppc(ppc):
     pfc.baseMVA = ppc["baseMVA"]
 
     _bus = ppc['bus']    
-    bus = Bus()
-    bus.n = _bus.shape[0]
+    bus = Bus(_bus.shape[0])
     bus.bus_type = _bus[:, BUS_TYPE].copy()
     bus.Pd = _bus[:, PD].copy()
     bus.Qd = _bus[:, QD].copy()
@@ -194,8 +203,7 @@ def convert_ppc(ppc):
     bmap = {bi: i for i, bi in enumerate(_bus[:, BUS_I].astype(int))}
 
     _gen = ppc['gen']
-    gen = Gen()
-    gen.n = _gen.shape[0]
+    gen = Gen(_gen.shape[0])
     gbus = [bmap[i] for i in _gen[:, GEN_BUS].astype(int)]
     gen.bus = array(gbus)
     gen.Pg = _gen[:, PG].copy()
@@ -209,8 +217,7 @@ def convert_ppc(ppc):
     gen.Pmax = _gen[:, PMAX].copy()
 
     _br = ppc['branch']
-    br = Branch()
-    br.n = _br.shape[0]
+    br = Branch(_br.shape[0])
     fbus = [bmap[i] for i in _br[:, F_BUS].astype(int)]
     tbus = [bmap[i] for i in _br[:, T_BUS].astype(int)]
     br.f_bus = array(fbus)
