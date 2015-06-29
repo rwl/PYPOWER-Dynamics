@@ -5,11 +5,12 @@
 """Builds the vector of complex bus power injections.
 """
 
-from numpy import array, ones, flatnonzero as find
+from numpy import zeros, ones, flatnonzero as find
+import numpy as np
 from scipy.sparse import csr_matrix as sparse
 
 
-def makeSbus(baseMVA, bus, gen):
+def makeSbus(baseMVA, bus, load, gen):
     """Builds the vector of complex bus power injections.
 
     Returns the vector of complex bus power injections, that is, generation
@@ -19,18 +20,57 @@ def makeSbus(baseMVA, bus, gen):
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ## generator info
-    on = find(array(gen.status) > 0)      ## which generators are on?
-    gbus = array(gen.bus)[on]             ## what buses are they at?
+    Sg = makeSg(bus.n, gen)
+    Sd = makeSd(bus.n, load)
 
-    ## form net complex bus power injection vector
-    nb = bus.n
-    ngon = on.shape[0]
-    ## connection matrix, element i, j is 1 if gen on(j) at bus i is ON
+    # Form net complex bus power injection vector.
+    return (Sg - Sd) / baseMVA
+
+
+def makeSg(nb, gen):
+    on = find(gen.status > 0)
+    gbus = gen.bus[on]
+    ngon = len(on)
+    if ngon == 0:
+        return zeros(nb, dtype='complex')
+  
+    # Connection matrix, element i, j is 1 if gen on(j) at bus i is ON.
     Cg = sparse((ones(ngon), (gbus, range(ngon))), (nb, ngon))
 
-    ## power injected by gens plus power injected by loads converted to p.u.
-    Sbus = ( Cg * (gen.Pg[on] + 1j * gen.Qg[on]) -
-             (bus.Pd + 1j * bus.Qd) ) / baseMVA
+    Pg = gen.pg[on]
+    Qg = gen.qg[on]
+    Sg = np.complex(Pg, Qg);
 
-    return Sbus
+    return Cg * Sg # power injected by generators
+
+
+def makeSd(nb, load):
+    on = find(load.status > 0)
+    ldbus = load.bus[on]
+    non = len(on)
+    if non == 0:
+        return zeros(nb, dtype='complex')
+
+    Cd = sparse((ones(non), (ldbus, range(non))), (nb, non))
+
+    Pd = load.Pd[on]
+    Qd = load.Qd[on]
+    Sd = np.complex(Pd, Qd)
+
+    return Cd * Sd
+
+
+def makeYsh(nb, shunt):
+    on = find(shunt.status > 0)
+    shbus = shunt.bus[on]
+    non = len(on)
+    if non == 0:
+        return zeros(nb, dtype='complex')
+
+    Csh = sparse((ones(non), (shbus, range(non))), (nb, non))
+
+    Gs = shunt.Gs[on]
+    Bs = shunt.Bs[on]
+    Ysh = np.complex(Gs, Bs)
+
+    return Csh * Ysh

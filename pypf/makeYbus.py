@@ -7,9 +7,10 @@
 
 from numpy import ones, conj, nonzero, exp, pi, r_
 from scipy.sparse import csr_matrix
+from makeSbus import makeYsh
 
 
-def makeYbus(baseMVA, bus, branch):
+def makeYbus(baseMVA, bus, shunt, branch):
     """Builds the bus admittance matrix and branch admittance matrices.
 
     Returns the full bus admittance matrix (i.e. for all buses) and the
@@ -55,7 +56,7 @@ def makeYbus(baseMVA, bus, branch):
     ## then Psh - j Qsh = V * conj(Ysh * V) = conj(Ysh) = Gs - j Bs,
     ## i.e. Ysh = Psh + j Qsh, so ...
     ## vector of shunt admittances
-    Ysh = (bus.Gs + 1j * bus.Bs) / baseMVA
+    Ysh = makeYsh(nb, shunt) / baseMVA
 
     ## build connection matrices
     f = branch.f_bus                           ## list of "from" buses
